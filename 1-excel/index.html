@@ -65,6 +65,13 @@
             opacity: 1;
         }
     }
+
+    .selected {
+        background: rgb(174, 223, 225);
+    }
+    th .selected {
+        background: rgb(174, 223, 225);
+    }
 </style>
 <script type="module">
     const $ = el => document.querySelector(el);
@@ -81,6 +88,8 @@
     const range = length => Array.from({ length }, (_, i) => i);
     const getColumn = i => String.fromCharCode(FIRST_CHAR_CODE + i);
 
+    let selectedColumn
+
 
     let STATE = range(COLS).map(i => range(ROWS).map((j) => ({ computedValue: 0, value: 0 })));
 
@@ -93,7 +102,7 @@
         cell.value = value; // input
 
         newState[x][y] = cell;
-        
+
         computeAllCells(newState, generateAllConstants(newState));
         STATE = newState;
 
@@ -101,7 +110,7 @@
     }
 
     function computedValue(value, constants) {
-        if(typeof value === 'number') return value;
+        if (typeof value === 'number') return value;
         if (!value.startsWith('=')) return value;
 
         const formula = value.slice(1);
@@ -174,6 +183,9 @@
         input.setSelectionRange(end, end)
         input.focus()
 
+        $$('.selected').forEach(el => el.classList.remove('selected'));
+            selectedColumn = null;
+
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') input.blur()
         })
@@ -185,6 +197,50 @@
 
             updateCell({ x, y, value: input.value })
         }, { once: true })
+    })
+
+    $head.addEventListener('click', e => {
+        const th = e.target.closest('th');
+        if (!th) return;
+
+        const x = [ ...th.parentNode.children ].indexOf(th)
+        if(x < 0) return;
+
+        selectedColumn = x - 1;
+        th.classList.add('selected');
+        $$(`tr td:nth-child(${x + 1})`).forEach(el => el.classList.add('selected'));
+    })
+
+    document.addEventListener('keydown', e => {
+        if(e.key === 'Backspace' && selectedColumn !== null) {
+            range(ROWS).forEach(row => {
+                updateCell({ x: selectedColumn, y: row, value: '' })
+            })
+            renderSpreadSheet();
+        }
+    })
+
+    document.addEventListener('copy', e => {
+        if(selectedColumn !== null) {
+            const columnValues = range(ROWS).map(row => {
+                return STATE[selectedColumn][row].computedValue
+            });
+            
+            e.clipboardData.setData('text/plain', columnValues.join('\n'));
+            e.preventDefault()
+        }
+    })
+
+    document.addEventListener('click', e => {
+        const { target } = e;
+
+        const isThClicked = target.closest('th')
+        const isTdClicked = target.closest('td')
+
+        if(!isThClicked && !isTdClicked) {
+            $$('.selected').forEach(el => el.classList.remove('selected'));
+            selectedColumn = null;
+        }
     })
 
     renderSpreadSheet();
