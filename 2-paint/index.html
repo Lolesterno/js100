@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint.js</title>
+</head>
+<style>
+    *,
+    *::after,
+    *::before {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        background: #222;
+        padding: 16px;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    h1 {
+        color: #fce300;
+        font-size: 12px;
+        font-weight: 600;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+
+        img {
+            width: 16px;
+            height: auto;
+        }
+    }
+
+    .container {
+        border: 1px solid #808080;
+    }
+
+    main {
+        padding: 16px;
+    }
+
+    aside {
+        background: silver;
+        width: 52px;
+        padding-top: 2px;
+        display: flex;
+        flex-wrap: wrap;
+        
+        button {
+            width: 24px;
+            height: 24px;
+
+            background: #bdbdbd url('./icons/draw.png') center no-repeat;
+            border: 1.5px solid #eee;
+            border-right-color: #000;
+            border-bottom-color: #000;
+
+            image-rendering: pixelated;
+
+            &:hover {
+                border-color: #000;
+                border-right-color: #eee;
+                border-bottom-color: #eee;
+            }
+        }
+    }
+
+    header {
+        background: silver;
+        padding: 2px;
+
+        button {
+            border: 0;
+            background: transparent;
+
+            &:hover {
+                box-shadow: -1px -1px gray,
+                    inset 1px 1px white;
+
+            }
+        }
+    }
+
+    canvas {
+        background: #fff;
+    }
+
+    footer {
+        background: silver;
+        padding: 2px;
+    }
+</style>
+<script type="module">
+    // Constants
+    const MODES = {
+        DRAW: 'draw',
+        ERASE: 'erase',
+        RECTANGLE: 'rectangle',
+        LINE: 'line',
+        CIRCLE: 'circle',
+        POLYGON: 'polygon',
+        PICKER: 'picker'
+    }
+
+    // DOM Selectors - Utilities
+    const $ = selector => document.querySelector(selector)
+    const $$ = selector => document.querySelectorAll(selector)
+
+    // Element Selectors
+    const $canvas = $('#canvas')
+    const $colorPicker = $('#colorPicker')
+    const ctx = $canvas.getContext('2d')
+
+    // States
+    let isDrawing = false;
+    let startX, startY;
+    let lastX = 0;
+    let lastY = 0;
+    let mode = MODES.DRAW;
+
+    // Events
+    $canvas.addEventListener('mousedown', startDraw);
+    $canvas.addEventListener('mousemove', Drawing);
+    $canvas.addEventListener('mouseup', stopDrawing);
+    $canvas.addEventListener('mouseleave', stopDraw => { });
+    $colorPicker.addEventListener('change', handleChangeColor)
+
+
+    // Funtions 
+    function startDraw(e) {
+        isDrawing = true;
+        const { offsetX, offsetY } = e;
+
+        // Guardar las coordenadas iniciales
+        [startX, startY] = [offsetX, offsetY];
+        [lastX, lastY] = [offsetX, offsetY];
+    }
+
+    function Drawing(e) {
+        if (!isDrawing) return;
+
+        const { offsetX, offsetY } = e;
+
+        // Iniciar un trazado
+        ctx.beginPath();
+
+        // Mover el trazado a las coordenadas actuales
+        ctx.moveTo(lastX, lastY);
+
+        // Dibujo de la linea 
+        ctx.lineTo(offsetX, offsetY);
+
+        ctx.stroke();
+
+        // Actualizar las ultimas coordenadas
+        [lastX, lastY] = [offsetX, offsetY];
+    }
+
+    function stopDrawing(e) {
+        isDrawing = false;
+    }
+
+    function handleChangeColor() {
+        const { value } = $colorPicker
+        ctx.strokeStyle = value;
+    }
+
+
+</script>
+
+<body>
+    <h1>
+        <img src="/2-paint/icon.png" alt="paint.js" srcset="">
+        Paint.js
+    </h1>
+    <div class="container">
+        <header>
+            <button>File</button>
+            <button>Edit</button>
+            <button>View</button>
+            <button>Image</button>
+            <button>Option</button>
+            <button>Help</button>
+        </header>
+        
+        <aside>
+            <nav>
+                <button id="drawBtn" title="Pincel"></button>
+                <button id="eraseBtn" title="Borrar"></button>
+                <button id="rectangleBtn" title="Rectangulo"></button>
+                <button id="circleBtn" title="Circulo"></button>
+                <button id="pickerBtn" title="Seleccionar"></button>
+            </nav>
+        </aside>
+        <main>
+            <canvas id="canvas" width="300" height="200"></canvas>
+        </main>
+
+
+        <footer>
+            <input type="color" id="colorPicker" value="#000000">
+        </footer>
+    </div>
+</body>
+
+</html>
