@@ -102,6 +102,7 @@
 
     #pickerBtn {
         background: url('./icons/picker.png') center no-repeat;
+        display: none;
     }
 
     #clearBtn {
@@ -159,6 +160,8 @@
     const $clearBtn = $('#clearBtn')
     const $drawBtn = $('#drawBtn')
     const $rectangleBtn = $('#rectangleBtn')
+    const $eraseBtn = $('#eraseBtn')
+    const $pickerBtn = $('#pickerBtn')
 
     const ctx = $canvas.getContext('2d')
 
@@ -183,11 +186,18 @@
     });
     $drawBtn.addEventListener('click', () => {
         setMode(MODES.DRAW)
-    })
+    });
+    $eraseBtn.addEventListener('click', () => {
+        setMode(MODES.ERASE)
+    });
+    $pickerBtn.addEventListener('click', () => {
+        setMode(MODES.PICKER)
+    });
 
 
-    // Funtions 
-    function setMode(newMode) {
+    // Funtions
+    async function setMode(newMode) {
+        let previousMode = mode
         mode = newMode;
 
         // Limpiar el boton activo
@@ -196,13 +206,46 @@
         // Poner el nuevo boton Activo
         if (mode === MODES.RECTANGLE) {
             $rectangleBtn.classList.add('active')
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.lineWidth = 2;
             $canvas.style.cursor = 'nw-resize'
             return;
         }
 
         if (mode === MODES.DRAW) {
             $drawBtn.classList.add('active')
+            ctx.globalCompositeOperation = 'source-over';
             $canvas.style.cursor = 'crosshair'
+            ctx.lineWidth = 1;
+            return;
+        }
+
+        if (mode === MODES.ERASE) {
+            $eraseBtn.classList.add('active')
+            $canvas.style.cursor = 'url("./cursors/erase.png") 0 24, auto';
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 20;
+            return;
+        }
+
+        if (mode === MODES.PICKER) {
+            $pickerBtn.classList.add('active')
+
+            const eyeDropper = new window.EyeDropper();
+
+            try {
+                const colorResult = await eyeDropper.open()
+                const { sRGBHex } = colorResult
+
+                ctx.strokeStyle = sRGBHex
+
+                $colorPicker.value = sRGBHex;
+                setMode(previousMode)
+                console.log(colorResult);
+            } catch (error) {
+
+            }
+
             return;
         }
     }
@@ -214,7 +257,7 @@
         [startX, startY] = [offsetX, offsetY];
         [lastX, lastY] = [offsetX, offsetY];
 
-        // Foto del canvas 
+        // Foto del canvas
         imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
     }
@@ -224,14 +267,14 @@
 
         const { offsetX, offsetY } = e;
 
-        if (mode === MODES.DRAW) {
+        if (mode === MODES.DRAW || mode === MODES.ERASE) {
             // Iniciar un trazado
             ctx.beginPath();
 
             // Mover el trazado a las coordenadas actuales
             ctx.moveTo(lastX, lastY);
 
-            // Dibujo de la linea 
+            // Dibujo de la linea
             ctx.lineTo(offsetX, offsetY);
 
             ctx.stroke();
@@ -268,8 +311,13 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-// Init mode
-setMode(MODES.DRAW)
+    // Init mode
+    setMode(MODES.DRAW)
+
+    // Experimental modes, if the browser supports
+    if (window.EyeDropper !== undefined) {
+        $pickerBtn.style.display = 'block';
+    }
 </script>
 
 <body>
@@ -289,7 +337,7 @@ setMode(MODES.DRAW)
 
         <aside>
             <nav>
-                <button  id="drawBtn" title="Pincel"></button>
+                <button id="drawBtn" title="Pincel"></button>
                 <button id="eraseBtn" title="Borrar"></button>
                 <button id="rectangleBtn" title="Rectangulo"></button>
                 <button id="circleBtn" title="Circulo"></button>
